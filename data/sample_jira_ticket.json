@@ -1,0 +1,10 @@
+{
+  "key": "PRODX-456",
+  "summary": "Airflow Job Failure in Block-A Due to PRODX v2.3 Update - Schema Evolution Issue",
+  "description": "After capability team deployed PRODX v2.3 patch, tenant jobs for service domain block-a (LOB 009) failed in dev environment.\n\n**Impact:**\n- Group-Ingestion DAGs failed during schema validation in Glue.\n- Airflow logs show ValidationException: 'amount' field type mismatch (string vs number) due to new Athena parser not handling implicit casts.\n- Additional: EMR ComputeHub Jupyter notebooks in LOB 009 require cryptography==3.4.8, but shared infrastructure has 3.2.0, causing import errors.\n\n**Root Cause:**\n- Unvalidated change in PRODX: Updated Glue/Athena integration without backward compatibility for existing YAML wrappers.\n- Dependency conflict across LOBs: Block-b (LOB 003) uses lower cryptography version for security compliance.\n\n**Steps to Reproduce:**\n1. Run: dataform run -d block-a -e dev -g Group-Ingestion -w transaction_ingest\n2. Observe failure in Airflow UI.\n\n**Proposed Solution:**\n- Rollback Athena parser change or add explicit casting in YAML schemas (e.g., cast amount to float).\n- Isolate Python environments per LOB using virtualenvs in EMR or update infrastructure to support multiple versions (e.g., conda envs).\n- Capability team: Implement pre-release validation pipeline for tenant impacts.\n\n**Affected Stakeholders:**\n- Tenants: Block-A team (delayed data pipeline).\n- Infrastructure: EMR cluster shared across LOBs 009 and 003.\n\n**Resolution:**\n- Ticket assigned to Capability Team. Fix: Patch v2.3.1 with optional casting flag. ETA: 1 week.\n- For dependency: Upgrade infrastructure cryptography to 3.4.8 with pinning for LOB 003.\n\n**Attachments:**\n- airflow_log_dev_2025-09-29.txt\n- yaml_wrapper_transaction_ingest.yaml",
+  "status": "Resolved",
+  "assignee": "capability-team-lead",
+  "created": "2025-09-29T10:00:00Z",
+  "resolved": "2025-10-06T12:00:00Z",
+  "labels": ["PRODX-Update", "Airflow-Failure", "Dependency-Conflict", "Schema-Evolution"]
+}

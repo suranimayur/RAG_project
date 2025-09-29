@@ -1,0 +1,47 @@
+# Sample YAML Wrapper for API-Ingestion Group in PRODX Framework
+# This simulates a tenant's YAML for ingesting JSON files from S3 inbound to curated bucket
+# Business Context: Ingests customer transaction data in JSON format, full load pattern
+
+version: 1.0
+service_domain: block-a
+env: dev
+group: API-Ingestion
+wrapper: transaction_ingest
+
+# Configuration for ingestion
+ingest_config:
+  source_bucket: s3://abc-bank-inbound/prod/block-a/transactions/
+  source_pattern: "*.json"
+  file_format: json
+  load_pattern: full_load  # Alternatives: delta_load
+  schema:
+    type: object
+    properties:
+      transaction_id:
+        type: string
+      amount:
+        type: number
+      timestamp:
+        type: string
+      customer_id:
+        type: string
+    required: [transaction_id, amount, timestamp]
+
+# Target curated bucket
+target_bucket: s3://abc-bank-curated/dev/block-a/transactions/
+target_format: json  # Ensures schema integrity
+
+# AWS Services Involved
+glue_table: block_a_transactions
+redshift_spectrum: enabled
+athena_query: "SELECT * FROM glue_table WHERE date = current_date"
+
+# Validation Rules
+data_integrity:
+  - no_nulls: [transaction_id, amount]
+  - range_check: amount > 0
+schema_evolution: backward_compatible  # Handles updates without breaking jobs
+
+# Command to run: dataform run -d block-a -e dev -g API-Ingestion -w transaction_ingest
+
+# Notes: This wrapper ensures data integrity during ingestion. Changes in PRODX (e.g., new Glue version) may break if schema not validated.

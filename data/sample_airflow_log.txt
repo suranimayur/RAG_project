@@ -1,0 +1,23 @@
+# Sample Airflow Log: Failed Job Due to PRODX Update
+# Business Context: Tenant job for Group-Ingestion fails after capability team update to PRODX v2.3, 
+# due to unvalidated change in Glue dependency affecting schema evolution. 
+# This simulates the pain point of surprise failures in non-prod environments.
+
+[2025-09-29 10:15:23] INFO - Starting DAG: block-a_ingestion_dag
+[2025-09-29 10:15:24] INFO - Task: ingest_transactions - Executing YAML wrapper: transaction_ingest
+[2025-09-29 10:15:25] INFO - Fetching from S3 inbound: s3://abc-bank-inbound/dev/block-a/transactions/*.json
+[2025-09-29 10:15:26] ERROR - S3 access granted, but Glue job failed: Schema evolution not backward compatible. 
+[2025-09-29 10:15:27] ERROR - Traceback (most recent call last):
+  File "/opt/airflow/dags/prod_x_ingestion.py", line 45, in execute
+    glue_client.start_job_run(JobName='block_a_transactions_glue')
+  File "/usr/local/lib/python3.8/site-packages/boto3/clients/glue.py", line 123, in start_job_run
+    raise ClientError(response, operation_name)
+boto3.exceptions.botocore.exceptions.ClientError: An error occurred (ValidationException) when calling the StartJobRun operation: 
+Input schema 'amount' expected number, but received string due to PRODX v2.3 change in Athena parser. 
+Previous version v2.2 handled implicit casting.
+[2025-09-29 10:15:28] WARNING - EMR ComputeHub affected: Jupyter notebook in LOB 009 failed on cryptography module version 3.4.8 (required), but environment has 3.2.0.
+[2025-09-29 10:15:29] ERROR - Job failed. Retrying in 5 min. Impact: Delayed data curation for block-a service domain.
+[2025-09-29 10:15:30] INFO - Airflow DAG status: FAILED. Notify tenant via email.
+
+# Analysis for RAG: This log indicates impact from unvalidated PRODX update. Suggested fix: Rollback to v2.2 or update YAML schema to explicit cast amount to number.
+# Related: Check JIRA ticket PRODX-456 for capability team patch details.
